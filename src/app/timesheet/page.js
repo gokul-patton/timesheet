@@ -1,5 +1,6 @@
 'use client'
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const getDaysInMonth = (year, month) => {
     const date = new Date(year, month, 1);
@@ -31,22 +32,10 @@ export default function TimesheetPage() {
     const [month, setMonth] = useState(today.getMonth());
     const [projects, setProjects] = useState({});
     const [hours, setHours] = useState({});
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [message, setMessage] = useState("");
-
-    const handleLogin = () => {
-        if (username === "employee1" && password === "pass123") {
-            setIsLoggedIn(true);
-            setMessage("Login successful");
-        } else {
-            setMessage("Invalid credentials");
-        }
-    };
-
+    const [isLogout, setIsLogout] = useState(false);
     const days = getDaysInMonth(year, month);
     const weeks = getWeeks(days);
+    const router = useRouter();
 
     const handleHourChange = (weekIndex, dayIndex, value) => {
         const key = `${weekIndex}-${dayIndex}`;
@@ -71,49 +60,37 @@ export default function TimesheetPage() {
         }, 0);
     };
 
-    if (!isLoggedIn) {
-        return (
-            <div className="w-full max-w-sm mx-auto mt-20 p-6 bg-white rounded-2xl shadow-lg">
-            <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-center text-black">Login</h2>
-            <input
-            type="text"
-            placeholder="Username"
-            className="w-full px-4 py-2 border rounded-lg text-black"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            />
-            <input
-            type="password"
-            placeholder="Password"
-            className="w-full px-4 py-2 border rounded-lg text-black"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            />
-            <button
-            onClick={handleLogin}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
-            >
-            Sign In
-            </button>
-            {message && (
-                <div
-                className={`text-center font-medium mt-2 ${message.includes("successful") ? "text-green-600" : "text-red-600"
-                }`}
-                >
-                {message}
-                </div>
-            )}
-            </div>
-            </div>
-        );
-    }
 
+    // if (isLogout) {
+    //     setIsLogout(false); 
+    //     router.push('/');
+    // }
     return (
-        <div className="p-10 space-y-8"> 
-        <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Employee Timesheet</h2>
-        <div className="flex gap-2">
+        <div className="min-h-screen"> 
+        {/* NavBar*/}
+        <nav className="shadow px-6 py-4 flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Timesheet App</h1>
+        <div className="flex items-center space-x-4">
+        <span className="font-medium">John Doe</span>
+        <button 
+        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600" 
+        // onClick={setIsLogout(true)}
+        >
+        Logout
+        </button>
+        </div>
+        </nav>
+
+        <div className="mx-40">
+        {/* Employee details*/}
+        <section className="p-4 rounded shadow mb-6">
+        <h2 className="text-xl font-semibold mb-2">Employee Details</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div><strong>Name:</strong> John Doe</div>
+        <div><strong>Employee ID:</strong> EMP12345</div>
+        <div><strong>Role:</strong> Software Engineer</div>
+
+        <div className="gap-2">
         <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className="border p-2 rounded">
         {Array.from({ length: 12 }, (_, i) => (
             <option key={i} value={i}>{new Date(0, i).toLocaleString('default', { month: 'long' })}</option>
@@ -127,13 +104,10 @@ export default function TimesheetPage() {
         </select>
         </div>
         </div>
-
-        <div>
-            
-        </div>
-
+        </section>
+        
         {weeks.map((week, weekIndex) => (
-            <div key={weekIndex} className="flex flex-col items-center">
+            <div key={weekIndex} className="flex flex-row place-content-center items-center mb-[1em]">
             <div className="border rounded-xl shadow p-4 space-y-2">
             <h3 className="text-lg font-semibold">Week {weekIndex + 1}</h3>
             <div>
@@ -143,12 +117,12 @@ export default function TimesheetPage() {
             <div className="grid grid-cols-7 gap-2 text-xs text-center">
             {week.map((day, idx) => <div key={idx}>{day.toLocaleDateString('default', { weekday: 'short' })}</div>)}
             </div>
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-2"> 
             {week.map((_, dayIndex) => (
                 <input
                 key={dayIndex}
                 type="number"
-                className="border p-2 rounded w-full"
+                className="border p-2 rounded w-[6em] "
                 placeholder="Hours"
                 max = "24"
                 value={hours[`${weekIndex}-${dayIndex}`] || ""}
@@ -162,21 +136,34 @@ export default function TimesheetPage() {
             </div>
             <textarea
             key={weekIndex}
-            className="w-full border rounded-xl p-2"
+            className="w-[20em] h-[10em] border rounded-xl p-2 ms-5"
             rows={2}
-            placeholder="Describe project/work for the week"
+            placeholder="Describe about project/work for the week"
             value={projects[weekIndex] || ""}
             onChange={(e) => handleProjectChange(weekIndex, e.target.value)}
             />
             </div>
         ))}
 
-        <div className="border-t pt-4">
-        <h4 className="text-lg font-bold">Daily Totals</h4>
+        <div className="border-t p-4">
+        <h4 className="text-lg font-bold">Totals</h4>
+        <div>
         <div className="grid grid-cols-7 gap-2 text-center font-semibold">
-        {Array.from({ length: 7 }).map((_, dayIndex) => (
+        <div>Week 1</div>
+        <div>Week 2</div>
+        <div>Week 3</div>
+        <div>Week 4</div>
+        <div>Week 5</div>
+        <div>Total</div>
+        </div>
+
+        <div className="grid grid-cols-7 gap-2 text-center font-semibold">
+        {Array.from({ length: 6 }).map((_, dayIndex) => (
             <div key={dayIndex}>{getDayTotal(dayIndex)} hrs</div>
         ))}
+        <button className="bg-green-500 text-white px-3 py-1 rounded hover:bg-red-600">Submit</button>
+        </div>
+        </div>
         </div>
         </div>
         </div>
