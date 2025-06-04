@@ -1,12 +1,12 @@
 package com.example.server.timesheet;
 
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.stereotype.Service;
 
-@RestController
-class timesheetService{
+@Service
+public class timesheetService{
 
-    @RequestMapping
-    public void getTimeSheet(){
+    // create an object for repository
+    void getTimeSheet(){
+        System.out.println("time sheet service called");
     }
 }
