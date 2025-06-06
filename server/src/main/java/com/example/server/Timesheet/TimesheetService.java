@@ -1,9 +1,9 @@
-package com.example.server.timesheet;
+package com.example.server.Timesheet;
 
 import org.springframework.stereotype.Service;
 
 @Service
-public class timesheetService{
+public class TimesheetService{
 
     // create an object for repository
     void getTimeSheet(){
