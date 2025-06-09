@@ -18,15 +18,11 @@ public class UserController{
         @RequestHeader(value = "username", required = false) String username,
         @RequestHeader(value = "password", required = false) String password) 
     {
-       // Null check for missing headers
-        if (username == null || password == null) {
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body("Missing username or password header");
-        }
         
         User user = userService.isActiveUser(username, password);
+
         if (user != null) {
+            System.out.println("the User data is " + user);
             return ResponseEntity.ok(user);
         } else {
              return ResponseEntity

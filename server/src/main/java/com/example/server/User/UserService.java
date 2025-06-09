@@ -12,6 +12,7 @@ public class UserService{
     public User isActiveUser(String username, String password){
 
         User currentUserData = userRepo.findByEmail(username);
+
         if(currentUserData != null && currentUserData.getPassword().equals(password)){
             return currentUserData;
         } else{

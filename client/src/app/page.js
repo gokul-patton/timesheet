@@ -12,7 +12,6 @@ export default function LoginPage() {
 
     const router = useRouter();
 
-
     const handleLogin = async () => {
         try {
             const response = await fetch("http://localhost:8080/api/v1/user/auth", {
@@ -24,10 +23,18 @@ export default function LoginPage() {
             });
 
             if (response.ok) {
+                const theUserData = await response.json();
+
+                console.log(theUserData);
+
                 setIsLoggedIn(true);
                 setMessage("Login successful");
-            } else if (response.status === 401) {
-                setMessage("Missing username or password");
+
+                localStorage.setItem("user", JSON.stringify(theUserData));
+                router.push("/timesheet");
+
+            } else if (response.status == 401) {
+                setMessage("Incorrect Username or password")
             } else {
                 setMessage("Unexpected error occurred");
             }
@@ -36,12 +43,6 @@ export default function LoginPage() {
             setMessage("Network error");
         }
     };
-
-
-    if (isLoggedIn) {
-        setIsLoggedIn(false)
-        router.push('/timesheet')
-    }
 
     return (
         <div className="w-full max-w-sm mx-auto mt-20 p-6 bg-white rounded-2xl shadow-lg">

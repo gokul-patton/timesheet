@@ -27,6 +27,9 @@ const getWeeks = (days) => {
 };
 
 export default function TimesheetPage() {
+    const router = useRouter();
+
+    const userDetails = JSON.parse(localStorage.getItem("user"));
     const today = new Date();
     const [year, setYear] = useState(today.getFullYear());
     const [month, setMonth] = useState(today.getMonth());
@@ -35,7 +38,6 @@ export default function TimesheetPage() {
     const [isLogout, setIsLogout] = useState(false);
     const days = getDaysInMonth(year, month);
     const weeks = getWeeks(days);
-    const router = useRouter();
 
     const handleHourChange = (weekIndex, dayIndex, value) => {
         const key = `${weekIndex}-${dayIndex}`;
@@ -72,7 +74,7 @@ export default function TimesheetPage() {
             <nav className="shadow px-6 py-4 flex justify-between items-center">
                 <h1 className="text-2xl font-bold">Timesheet App</h1>
                 <div className="flex items-center space-x-4">
-                    <span className="font-medium">John Doe</span>
+                    <span className="font-medium">{userDetails.name}</span>
                     <button
                         className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
                     // onClick={setIsLogout(true)}
@@ -87,9 +89,9 @@ export default function TimesheetPage() {
                 <section className="p-4 rounded shadow mb-6">
                     <h2 className="text-xl font-semibold mb-2">Employee Details</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div><strong>Name:</strong> John Doe</div>
-                        <div><strong>Employee ID:</strong> EMP12345</div>
-                        <div><strong>Role:</strong> Software Engineer</div>
+                        <div><strong>Name:</strong> {userDetails.name}</div>
+                        <div><strong>Employee ID:</strong> {userDetails.employeeId}</div>
+                        <div><strong>Role:</strong> {userDetails.desigination}</div>
 
                         <div className="gap-2">
                             <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className="border p-2 rounded">
