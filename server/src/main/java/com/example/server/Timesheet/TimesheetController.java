@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -33,9 +34,10 @@ class TimesheetController{
     void postTimeSheet(
         @PathVariable String employeeId,
         @RequestParam int year,
-        @RequestParam int month
+        @RequestParam int month,
+        @RequestBody Timesheet data
     ){  
         // timesheetService.updateTimeSheet(employeeId); 
-        System.out.println("post method called" + employeeId);
+        System.out.println("post method called " + data);
     }
 }

@@ -1,17 +1,25 @@
 'use client'
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+// import { useRouter } from "next/navigation";
 
+//getting all days in the month
 const getDaysInMonth = (year, month) => {
     const date = new Date(year, month, 1);
     const days = [];
     while (date.getMonth() === month) {
+        if (date.getDate() == 1 && date.getDay() != 0) {
+            for (let i = 0; i < date.getDay(); i++) {
+                const prevDate = new Date(year, month, 0 - (date.getDay() - 1 - i));
+                days.push(prevDate);
+            }
+        }
         days.push(new Date(date));
         date.setDate(date.getDate() + 1);
     }
     return days;
 }
 
+//separting days based on week
 const getWeeks = (days) => {
     const weeks = [];
     let currentWeek = [];
@@ -26,16 +34,22 @@ const getWeeks = (days) => {
     return weeks;
 };
 
-export default function TimesheetPage() {
-    const router = useRouter();
 
+
+
+export default function TimesheetPage() {
+    // const router = useRouter();
+
+    //user data
     const userDetails = JSON.parse(localStorage.getItem("user"));
+
     const today = new Date();
     const [year, setYear] = useState(today.getFullYear());
     const [month, setMonth] = useState(today.getMonth());
     const [projects, setProjects] = useState({});
     const [hours, setHours] = useState({});
-    const [isLogout, setIsLogout] = useState(false);
+    const [projectKey, setProjectKey] = useState({});
+    // const [isLogout, setIsLogout] = useState(false);
     const days = getDaysInMonth(year, month);
     const weeks = getWeeks(days);
 
@@ -45,7 +59,6 @@ export default function TimesheetPage() {
     };
 
     const handleProjectChange = (weekIndex, value) => {
-        time
         setProjects((prev) => ({ ...prev, [weekIndex]: value }));
     };
 
@@ -63,11 +76,87 @@ export default function TimesheetPage() {
         }, 0);
     };
 
+    const handleSubmit = async () => {
+        const weeks = [];
+
+        for (let i = 0; i < Object.keys(projects).length; i++) {
+            const daysOfWeek = [];
+            for (let j = 0; j < 7; j++) {
+                const key = `${i}-${j}`;
+                if (hours[key] !== undefined) {
+                    const date = getDaysInMonth(year, month)[i * 7 + j];
+                    daysOfWeek.push({
+                        date: date?.toISOString().split("T")[0] || "",
+                        day: date?.toLocaleDateString('default', { weekday: 'long' }),
+                        time: hours[key].toString(),
+                    });
+                }
+            }
+
+            weeks.push({
+                weekNo: i + 1,
+                weekDescription: projects[i],
+                weekTotal: daysOfWeek.reduce((sum, day) => sum + parseFloat(day.time || 0), 0),
+                daysOfWeek,
+            });
+        }
+
+        const payload = {
+            employeeId: userDetails.employeeId,
+            year,
+            month,
+            weeks,
+            created_at: new Date(),
+            updated_at: new Date(),
+            canEdit: false,
+        };
+
+        const savingURL = "http://localhost:8080/api/v1/timesheet/" + userDetails.employeeId + "?year=" + year + "&month=" + month;
+        console.log("the saving URL is ", savingURL);
+        await fetch(savingURL, {
+            method: "POST", // or PUT
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+    };
+
+    useEffect(() => {
+        const fetchTimesheet = async () => {
+            const res = await fetch(
+                `http://localhost:8080/api/v1/timesheet/${userDetails.employeeId}?year=${year}&month=${month}`
+            );
+
+            if (res.ok) {
+                const data = await res.json();
+
+                // Map backend timesheet structure to frontend hours/projects
+                const newHours = {};
+                const newProjects = {};
+                const newProjectKeys = {};
+
+                data.weeks.forEach((week, weekIndex) => {
+                    newProjects[weekIndex] = week.weekDescription || "";
+                    week.daysOfWeek.forEach((day, dayIndex) => {
+                        const key = `${weekIndex}-${dayIndex}`;
+                        newHours[key] = parseFloat(day.time) || 0;
+                        newProjectKeys[key] = day.projectId || "";
+                    });
+                });
+
+                setHours(newHours);
+                setProjects(newProjects);
+            }
+        };
+
+        fetchTimesheet();
+    }, [year, month]);
 
     // if (isLogout) {
     //     setIsLogout(false); 
     //     router.push('/');
     // }
+
+
     return (
         <div className="min-h-screen">
             {/* NavBar*/}
@@ -113,30 +202,46 @@ export default function TimesheetPage() {
                     <div key={weekIndex} className="flex flex-row place-content-center items-center mb-[1em]">
                         <div className="border rounded-xl shadow p-4 space-y-2">
                             <h3 className="text-lg font-semibold">Week {weekIndex + 1}</h3>
-                            <div>
-                                <div className="grid grid-cols-7 gap-2 text-sm font-semibold text-center">
-                                    {week.map((day, idx) => <div key={idx}>{day.toLocaleDateString()}</div>)}
-                                </div>
-                                <div className="grid grid-cols-7 gap-2 text-xs text-center">
-                                    {week.map((day, idx) => <div key={idx}>{day.toLocaleDateString('default', { weekday: 'short' })}</div>)}
-                                </div>
-                                <div className="grid grid-cols-7 gap-2">
-                                    {week.map((_, dayIndex) => (
+                            <div className="grid grid-cols-7 gap-2">
+                                {week.map((day, idx) => (
+                                    <div key={idx} className="flex flex-col text-center">
+                                        {/* Date */}
+                                        <div className="text-sm font-semibold">
+                                            {day.toLocaleDateString()}
+                                        </div>
+
+                                        {/* Day name */}
+                                        <div className="text-xs">
+                                            {day.toLocaleDateString('default', { weekday: 'short' })}
+                                        </div>
+
+                                        {/* Project ID input */}
                                         <input
-                                            key={dayIndex}
+                                            className={`border p-2 rounded w-20 mb-1 text-xs ${day.getMonth() !== month ? 'bg-gray-200 cursor-not-allowed' : ''
+                                                }`}
+                                            placeholder="Project Id"
+                                            disabled={day.getMonth() !== month}
+                                        />
+
+                                        {/* Hours input */}
+                                        <input
                                             type="number"
-                                            className="border p-2 rounded w-[6em] "
+                                            className={`border p-2 rounded w-20 ${day.getMonth() !== month ? 'bg-gray-200 cursor-not-allowed' : ''
+                                                }`}
                                             placeholder="Hours"
                                             max="24"
-                                            value={hours[`${weekIndex}-${dayIndex}`] || ""}
-                                            onChange={(e) => handleHourChange(weekIndex, dayIndex, e.target.value)}
+                                            disabled={day.getMonth() !== month}
+                                            value={hours[`${weekIndex}-${idx}`] || ""}
+                                            onChange={(e) => handleHourChange(weekIndex, idx, e.target.value)}
                                         />
-                                    ))}
-                                </div>
-                                <div className="text-right font-semibold mt-2">Week Total: {getWeekTotal(weekIndex)} hrs</div>
-
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="text-right font-semibold mt-2">
+                                Week Total: {getWeekTotal(weekIndex)} hrs
                             </div>
                         </div>
+
                         <textarea
                             key={weekIndex}
                             className="w-[20em] h-[10em] border rounded-xl p-2 ms-5"
@@ -164,7 +269,12 @@ export default function TimesheetPage() {
                             {Array.from({ length: 5 }).map((_, dayIndex) => (
                                 <div key={dayIndex}>{getWeekTotal(dayIndex)} hrs</div>
                             ))}
-                            <button className="bg-green-500 text-white px-3 py-1 rounded hover:bg-red-600">Submit</button>
+                            <button
+                                className="bg-green-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                                onClick={handleSubmit}
+                            >
+                                Submit
+                            </button>
                         </div>
                     </div>
                 </div>
