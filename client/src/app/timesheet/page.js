@@ -74,7 +74,15 @@ export default function TimesheetPage() {
         }, 0);
     };
 
-    const getMonthTotal = null;
+    const getMonthTotal = () => {
+        console.log("total month called");
+        return weeks.reduce((weekSum, _, weekIndex) => {
+            return weekSum + weeks[weekIndex].reduce((sum, day) => {
+                const key = `${weekIndex}-${day.getDate()}`;
+                return sum + (hours[key] || 0);
+            }, 0);
+        }, 0)
+    };
 
     const handleSubmit = async () => {
         const weeksData = weeks.map((week, weekIndex) => {
@@ -261,24 +269,25 @@ export default function TimesheetPage() {
                     <h4 className="text-lg font-bold">Totals</h4>
                     <div>
                         <div className="grid grid-cols-7 gap-2 text-center font-semibold">
-                            <div>Week 1</div>
-                            <div>Week 2</div>
-                            <div>Week 3</div>
-                            <div>Week 4</div>
-                            <div>Week 5</div>
+                            {weeks.map((_, weekIndex) => (
+                                <div> Week {weekIndex + 1} </div>
+                            ))}
                             <div>Total</div>
+                            <div></div>
                         </div>
 
                         <div className="grid grid-cols-7 gap-2 text-center font-semibold">
-                            {Array.from({ length: 5 }).map((_, dayIndex) => (
-                                <div key={dayIndex}>{getWeekTotal(dayIndex)} hrs</div>
+                            {weeks.map((_, weekIndex) => (
+                                <div key={weekIndex}>{getWeekTotal(weekIndex)} hrs</div>
                             ))}
+                            <div>{getMonthTotal()} hrs</div>
                             <button
                                 className="bg-green-500 text-white px-3 py-1 rounded hover:bg-red-600"
                                 onClick={handleSubmit}
                             >
                                 Submit
                             </button>
+
                         </div>
                     </div>
                 </div>
