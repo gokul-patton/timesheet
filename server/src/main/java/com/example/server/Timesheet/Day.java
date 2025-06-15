@@ -1,12 +1,14 @@
 package com.example.server.Timesheet;
 
+import java.util.Date;
+
 // import java.util.Date;
 
 public class Day {
 
-    private String date;
+    private Date date;
     private String day;
-    private String timeWorked;
+    private int timeWorked;
     private String projectId;
 
 	public String getDate() {
@@ -21,10 +23,10 @@ public class Day {
 	public void setDay(String day) {
 		this.day = day;
 	}
-	public String getTimeWorked() {
+	public int getTimeWorked() {
 		return timeWorked;
 	}
-	public void setTimeWorked(String timeWorked) {
+	public void setTimeWorked(int timeWorked) {
 		this.timeWorked = timeWorked;
 	}
 	public String getProjectId() {

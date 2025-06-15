@@ -48,64 +48,61 @@ export default function TimesheetPage() {
     const [month, setMonth] = useState(today.getMonth());
     const [projects, setProjects] = useState({});
     const [hours, setHours] = useState({});
-    const [projectKey, setProjectKey] = useState({});
+    const [projectId, setProjectId] = useState({});
     // const [isLogout, setIsLogout] = useState(false);
     const days = getDaysInMonth(year, month);
     const weeks = getWeeks(days);
 
-    const handleHourChange = (weekIndex, dayIndex, value) => {
-        const key = `${weekIndex}-${dayIndex}`;
+    const handleHourChange = (weekIndex, date, value) => {
+        const key = `${weekIndex}-${date}`;
         setHours((prev) => ({ ...prev, [key]: parseFloat(value) || 0 }));
     };
 
-    const handleProjectChange = (weekIndex, value) => {
+    const handleProjectDescChange = (weekIndex, value) => {
         setProjects((prev) => ({ ...prev, [weekIndex]: value }));
     };
 
-    const getMonthTotal = (dayIndex) => {
-        return weeks.reduce((sum, _, weekIndex) => {
-            const key = `${weekIndex}-${dayIndex}`;
-            return sum + (hours[key] || 0);
-        }, 0);
+    const handleProjectIdChange = (weekIndex, date, value) => {
+        const key = `${weekIndex}-${date}`;
+        setProjectId((prev) => ({ ...prev, [key]: parseFloat(value) || 0 }));
     };
 
     const getWeekTotal = (weekIndex) => {
-        return weeks[weekIndex].reduce((sum, _, dayIndex) => {
-            const key = `${weekIndex}-${dayIndex}`;
+        return weeks[weekIndex].reduce((sum, day) => {
+            const key = `${weekIndex}-${day.getDate()}`;
             return sum + (hours[key] || 0);
         }, 0);
     };
 
+    const getMonthTotal = null;
+
     const handleSubmit = async () => {
-        const weeks = [];
+        const weeksData = weeks.map((week, weekIndex) => {
+            const daysOfWeek = week.map((day) => {
+                const key = `${weekIndex}-${day.getDate()}`;
+                return {
+                    date: day || "",
+                    day: day?.toLocaleDateString('default', { weekday: 'long' }),
+                    timeWorked: hours[key] || 0,
+                    projectId: projectId[key] || "",
+                };
+            }); // optionally skip days without hours
 
-        for (let i = 0; i < Object.keys(projects).length; i++) {
-            const daysOfWeek = [];
-            for (let j = 0; j < 7; j++) {
-                const key = `${i}-${j}`;
-                if (hours[key] !== undefined) {
-                    const date = getDaysInMonth(year, month)[i * 7 + j];
-                    daysOfWeek.push({
-                        date: date?.toISOString().split("T")[0] || "",
-                        day: date?.toLocaleDateString('default', { weekday: 'long' }),
-                        time: hours[key].toString(),
-                    });
-                }
-            }
-
-            weeks.push({
-                weekNo: i + 1,
-                weekDescription: projects[i],
-                weekTotal: daysOfWeek.reduce((sum, day) => sum + parseFloat(day.time || 0), 0),
+            return {
+                weekNo: weekIndex,
+                weekWorkDescription: projects[weekIndex],
+                weekTotalWorkedHr: getWeekTotal(weekIndex),
                 daysOfWeek,
-            });
-        }
+            };
+        });
 
         const payload = {
+            //FIXME: need object id to update the varaible
+            // _id: "684c9ce3c4979a8c92fbe00e",
             employeeId: userDetails.employeeId,
             year,
             month,
-            weeks,
+            weeks: weeksData,
             created_at: new Date(),
             updated_at: new Date(),
             canEdit: false,
@@ -113,6 +110,7 @@ export default function TimesheetPage() {
 
         const savingURL = "http://localhost:8080/api/v1/timesheet/" + userDetails.employeeId + "?year=" + year + "&month=" + month;
         console.log("the saving URL is ", savingURL);
+        console.log("the payload looks like ", payload);
         await fetch(savingURL, {
             method: "POST", // or PUT
             headers: { "Content-Type": "application/json" },
@@ -128,35 +126,32 @@ export default function TimesheetPage() {
 
             if (res.ok) {
                 const data = await res.json();
+                console.log("the data for current month is ", data)
 
                 // Map backend timesheet structure to frontend hours/projects
                 const newHours = {};
                 const newProjects = {};
                 const newProjectKeys = {};
 
-                data.weeks.forEach((week, weekIndex) => {
-                    newProjects[weekIndex] = week.weekDescription || "";
-                    week.daysOfWeek.forEach((day, dayIndex) => {
-                        const key = `${weekIndex}-${dayIndex}`;
-                        newHours[key] = parseFloat(day.time) || 0;
+                data.weeks.forEach((week) => {
+                    newProjects[week.weekNo] = week.weekWorkDescription || "";
+                    week.daysOfWeek.forEach((day) => {
+                        const dateObj = new Date(day.date);
+                        const key = `${week.weekNo}-${dateObj.getDate()}`;
+                        newHours[key] = parseFloat(day.timeWorked) || 0;
                         newProjectKeys[key] = day.projectId || "";
                     });
                 });
 
                 setHours(newHours);
                 setProjects(newProjects);
+                setProjectId(newProjectKeys);
             }
         };
 
         fetchTimesheet();
     }, [year, month]);
-
-    // if (isLogout) {
-    //     setIsLogout(false); 
-    //     router.push('/');
-    // }
-
-
+    //
     return (
         <div className="min-h-screen">
             {/* NavBar*/}
@@ -183,12 +178,18 @@ export default function TimesheetPage() {
                         <div><strong>Role:</strong> {userDetails.desigination}</div>
 
                         <div className="gap-2">
-                            <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className="border p-2 rounded">
+                            <select value={month}
+                                onChange={(e) => setMonth(Number(e.target.value))}
+                                className="border p-2 rounded"
+                            >
                                 {Array.from({ length: 12 }, (_, i) => (
                                     <option key={i} value={i}>{new Date(0, i).toLocaleString('default', { month: 'long' })}</option>
                                 ))}
                             </select>
-                            <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="border p-2 rounded">
+                            <select value={year}
+                                onChange={(e) => setYear(Number(e.target.value))}
+                                className="border p-2 rounded"
+                            >
                                 {[...Array(5)].map((_, i) => {
                                     const y = today.getFullYear() - 2 + i;
                                     return <option key={y} value={y}>{y}</option>;
@@ -215,12 +216,15 @@ export default function TimesheetPage() {
                                             {day.toLocaleDateString('default', { weekday: 'short' })}
                                         </div>
 
+
                                         {/* Project ID input */}
                                         <input
                                             className={`border p-2 rounded w-20 mb-1 text-xs ${day.getMonth() !== month ? 'bg-gray-200 cursor-not-allowed' : ''
                                                 }`}
                                             placeholder="Project Id"
                                             disabled={day.getMonth() !== month}
+                                            value={projectId[`${weekIndex}-${day.getDate()}`] || ""}
+                                            onChange={(e) => handleProjectIdChange(weekIndex, day.getDate(), e.target.value)}
                                         />
 
                                         {/* Hours input */}
@@ -231,8 +235,8 @@ export default function TimesheetPage() {
                                             placeholder="Hours"
                                             max="24"
                                             disabled={day.getMonth() !== month}
-                                            value={hours[`${weekIndex}-${idx}`] || ""}
-                                            onChange={(e) => handleHourChange(weekIndex, idx, e.target.value)}
+                                            value={hours[`${weekIndex}-${day.getDate()}`] || ""}
+                                            onChange={(e) => handleHourChange(weekIndex, day.getDate(), e.target.value)}
                                         />
                                     </div>
                                 ))}
@@ -248,7 +252,7 @@ export default function TimesheetPage() {
                             rows={2}
                             placeholder="Describe about project/work for the week"
                             value={projects[weekIndex] || ""}
-                            onChange={(e) => handleProjectChange(weekIndex, e.target.value)}
+                            onChange={(e) => handleProjectDescChange(weekIndex, e.target.value)}
                         />
                     </div>
                 ))}

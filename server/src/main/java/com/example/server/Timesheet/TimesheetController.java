@@ -37,7 +37,7 @@ class TimesheetController{
         @RequestParam int month,
         @RequestBody Timesheet data
     ){  
-        // timesheetService.updateTimeSheet(employeeId); 
+        timesheetService.updateTimeSheet(data); 
         System.out.println("post method called " + data);
     }
 }
