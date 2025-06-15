@@ -11,10 +11,10 @@ public class Day {
     private int timeWorked;
     private String projectId;
 
-	public String getDate() {
+	public Date getDate() {
 		return date;
 	}
-	public void setDate(String date) {
+	public void setDate(Date date) {
 		this.date = date;
 	}
 	public String getDay() {
